@@ -29,7 +29,7 @@ def load_data():
             match = re.search(r"(\d[\d,]*)", left_sales)
             if match:
                 sales = int(match.group(1).replace(",", ""))
-                car_data.append({"모델": left_model, "판매량": sales, "구분": "국산차"})
+                car_data.append({"모델": left_model, "판매량": sales, "구분": "수입차"})
 
     return pd.DataFrame(car_data)
 
