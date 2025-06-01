@@ -14,20 +14,22 @@ def load_data():
         # 국산차
         left_model = str(row[2]).strip() if len(row) > 2 else None
         left_sales = str(row[3]).strip() if len(row) > 3 else None
-        if left_model and "그래프로" in left_sales:
+        if left_model and left_sales:
             match = re.search(r"(\d[\d,]*)", left_sales)
             if match:
                 sales = int(match.group(1).replace(",", ""))
                 car_data.append({"모델": left_model, "판매량": sales, "구분": "국산차"})
 
+                
+
         # 수입차
         right_model = str(row[8]).strip() if len(row) > 8 else None
         right_sales = str(row[9]).strip() if len(row) > 9 else None
-        if right_model and "그래프로" in right_sales:
-            match = re.search(r"(\d[\d,]*)", right_sales)
+        if left_model and left_sales:
+            match = re.search(r"(\d[\d,]*)", left_sales)
             if match:
                 sales = int(match.group(1).replace(",", ""))
-                car_data.append({"모델": right_model, "판매량": sales, "구분": "수입차"})
+                car_data.append({"모델": left_model, "판매량": sales, "구분": "국산차"})
 
     return pd.DataFrame(car_data)
 
