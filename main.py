@@ -1,57 +1,62 @@
 import streamlit as st
-st.set_page_config(
-    page_title="자동차 판매 대시보드",
-    page_icon="🚗",
-    layout="wide"
-)
-
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# 구글시트 또는 CSV 파일 불러오기(사용자 업로드 가능)
-uploaded_file = st.file_uploader("CSV 파일을 업로드 하세요", type=["csv"])
-if uploaded_file:
-    df = pd.read_csv(uploaded_file)
-else:
-    SHEET_URL = "https://docs.google.com/spreadsheets/d/183YjwisKFynZ0yahE9qc_E4rQZ3KY3MCsdTIjYJX0no/export?format=csv&gid=0"
-    df = pd.read_csv(SHEET_URL)
+# 구글시트 CSV export 주소
+SHEET_URL = "https://docs.google.com/spreadsheets/d/183YjwisKFynZ0yahE9qc_E4rQZ3KY3MCsdTIjYJX0no/export?format=csv&gid=0"
 
-# 컬럼명 확인(첫 행에 이상한 값이 있으면 헤더 자동조정)
-if df.columns[0].startswith("Unnamed"):
-    df.columns = df.iloc[0]
-    df = df.drop(df.index[0]).reset_index(drop=True)
+# 데이터 불러오기
+@st.cache_data
+def load_data(url):
+    df = pd.read_csv(url)
+    # 첫 행에 컬럼명이 이상하게 들어있으면 자동 조정
+    if df.columns[0].startswith("Unnamed"):
+        df.columns = df.iloc[0]
+        df = df.drop(df.index[0]).reset_index(drop=True)
+    return df
 
-# 차량 모델(차종, 차명 등) 컬럼 자동 감지
+df = load_data(SHEET_URL)
+
+st.title("🚗 차량별 판매 현황 대시보드")
+
+# 차종/모델 컬럼 자동 감지
 model_col_candidates = [col for col in df.columns if any(x in str(col) for x in ["모델", "차명", "차종", "차량"])]
 if not model_col_candidates:
-    st.error(f"차량 모델/이름에 해당하는 컬럼을 찾을 수 없습니다.\n컬럼 목록: {list(df.columns)}")
+    st.error("차량(모델) 컬럼을 찾을 수 없습니다.")
     st.stop()
 model_col = model_col_candidates[0]
 
-# 판매량/수량 컬럼 자동 감지
-sales_col_candidates = [col for col in df.columns if any(x in str(col) for x in ["판매", "대수", "수량", "합계"])]
-if not sales_col_candidates:
-    st.error(f"판매량(수량)에 해당하는 컬럼을 찾을 수 없습니다.\n컬럼 목록: {list(df.columns)}")
+# 수치 컬럼 감지 (숫자형, 판매량 등)
+value_col_candidates = [col for col in df.columns if any(x in str(col) for x in ["판매", "대수", "실적", "합계", "수량", "점유"])]
+if not value_col_candidates:
+    value_col_candidates = [col for col in df.columns if df[col].dtype in ["int64", "float64"]]
+if not value_col_candidates:
+    st.error("판매량(수치) 컬럼을 찾을 수 없습니다.")
     st.stop()
-sales_col = sales_col_candidates[0]
+value_col = value_col_candidates[0]
 
-# 선택 UI
-models = df[model_col].dropna().unique().tolist()
-selected_models = st.multiselect("차량을 선택하세요 (복수 선택 가능)", models, default=models[:1])
+# 모델 리스트
+options = df[model_col].dropna().unique().tolist()
+default_options = options[:3] if len(options) >= 3 else options
 
-# 그래프 그리기
-if selected_models:
-    plot_df = df[df[model_col].isin(selected_models)].copy()
-    try:
-        plot_df[sales_col] = plot_df[sales_col].astype(int)
-    except:
-        plot_df[sales_col] = pd.to_numeric(plot_df[sales_col].astype(str).str.replace(",", ""), errors="coerce").fillna(0).astype(int)
-    plt.figure(figsize=(8, 4))
-    plt.bar(plot_df[model_col], plot_df[sales_col])
-    plt.xlabel("모델")
-    plt.ylabel("판매대수")
+# 멀티 선택 박스
+selected_models = st.multiselect(
+    "차종을 선택하세요 (여러 개 가능)", options, default=default_options
+)
+
+# 선택된 모델 데이터
+plot_df = df[df[model_col].isin(selected_models)]
+
+if not plot_df.empty:
+    plt.figure(figsize=(10, 6))
+    plt.bar(plot_df[model_col], plot_df[value_col].astype(int))
+    plt.xlabel(model_col)
+    plt.ylabel(value_col)
     plt.title("차량별 판매 현황")
-    plt.xticks(rotation=30)
     st.pyplot(plt)
 else:
-    st.info("차량을 선택하면 그래프가 나타납니다.")
+    st.info("차량(모델)을 선택하세요!")
+
+# 데이터 미리보기
+with st.expander("원본 데이터 보기"):
+    st.dataframe(df)
