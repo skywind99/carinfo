@@ -35,7 +35,9 @@ df = load_data()
 
 # --- Streamlit 앱 UI ---
 st.title("🚘 차량별 판매량 비교 대시보드")
-
+st.write("✅ df.head():", df.head())
+st.write("✅ df.columns:", df.columns.tolist())
+st.write("✅ df 길이:", len(df))
 car_options = df["모델"].tolist()
 selected_car = st.selectbox("차량 선택", car_options)
 
