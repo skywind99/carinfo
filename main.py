@@ -8,31 +8,62 @@ SHEET_URL = "https://docs.google.com/spreadsheets/d/183YjwisKFynZ0yahE9qc_E4rQZ3
 @st.cache_data
 def load_car_data():
     try:
-        df = pd.read_csv(SHEET_URL, header=None)
+        # 원본 데이터 로드
+        df_raw = pd.read_csv(SHEET_URL, header=None)
+        
+        # 디버깅: 원본 데이터 구조 확인
+        st.write("### 🔍 원본 데이터 구조 확인")
+        st.write(f"데이터프레임 크기: {df_raw.shape}")
+        st.write("첫 10행 데이터:")
+        st.dataframe(df_raw.head(10))
+        
         car_data = []
         
-        for i in range(4, len(df)):
-            model = str(df.iat[i, 3])
-            sales = str(df.iat[i, 4])
-            
-            # 제외 조건 개선
-            if (model.strip() == "총합계 :" or 
-                pd.isna(model) or 
-                model.strip() == "" or 
-                model.strip() == "nan" or
-                "보기" not in sales):
-                continue
-            
-            # 판매량 추출 정규식 개선
-            match = re.search(r"(\d[\d,]*)", sales)
-            if match:
-                sale_number = int(match.group(1).replace(",", ""))
-                car_data.append({"모델": model.strip(), "판매량": sale_number})
+        # 데이터가 충분한지 확인
+        if len(df_raw) <= 4:
+            st.error("데이터가 충분하지 않습니다. 시트 구조를 확인해주세요.")
+            return pd.DataFrame(columns=["모델", "판매량"])
         
-        return pd.DataFrame(car_data)
+        for i in range(4, len(df_raw)):
+            try:
+                # 인덱스 범위 확인
+                if df_raw.shape[1] <= 4:
+                    st.error(f"컬럼이 충분하지 않습니다. 현재 컬럼 수: {df_raw.shape[1]}")
+                    break
+                
+                model = str(df_raw.iat[i, 3])
+                sales = str(df_raw.iat[i, 4])
+                
+                # 디버깅 정보
+                if i < 8:  # 처음 몇 개만 표시
+                    st.write(f"행 {i}: 모델='{model}', 판매량='{sales}'")
+                
+                # 제외 조건 개선
+                if (model.strip() == "총합계 :" or 
+                    pd.isna(model) or 
+                    model.strip() == "" or 
+                    model.strip() == "nan" or
+                    "보기" not in sales):
+                    continue
+                
+                # 판매량 추출 정규식 개선
+                match = re.search(r"(\d[\d,]*)", sales)
+                if match:
+                    sale_number = int(match.group(1).replace(",", ""))
+                    car_data.append({"모델": model.strip(), "판매량": sale_number})
+            
+            except Exception as row_error:
+                st.warning(f"행 {i} 처리 중 오류: {row_error}")
+                continue
+        
+        result_df = pd.DataFrame(car_data)
+        st.write(f"### ✅ 처리된 데이터: {len(result_df)}개 차량")
+        
+        return result_df
     
     except Exception as e:
         st.error(f"데이터 로드 중 오류가 발생했습니다: {e}")
+        st.write("오류 상세:", str(e))
         return pd.DataFrame(columns=["모델", "판매량"])
 
 # 데이터 로드
@@ -44,7 +75,13 @@ st.title("🚗 차량별 판매 현황 대시보드")
 
 # 데이터가 로드되었는지 확인
 if df.empty:
-    st.warning("데이터를 불러올 수 없습니다. 시트 URL을 확인해주세요.")
+    st.warning("데이터를 불러올 수 없습니다. 위의 디버깅 정보를 확인해주세요.")
+    st.stop()
+
+# "모델" 컬럼이 있는지 확인
+if "모델" not in df.columns:
+    st.error("데이터에서 '모델' 컬럼을 찾을 수 없습니다.")
+    st.write("현재 컬럼들:", df.columns.tolist())
     st.stop()
 
 # 전체 통계 표시
