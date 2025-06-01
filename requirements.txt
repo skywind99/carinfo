@@ -1,5 +1,5 @@
-oauth2client
- pandas 
- gspread
- altair
 streamlit
+pandas
+matplotlib
+gspread
+oauth2client
