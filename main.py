@@ -1,4 +1,10 @@
 import streamlit as st
+st.set_page_config(
+    page_title="자동차 판매 대시보드",
+    page_icon="🚗",
+    layout="wide"
+)
+
 import pandas as pd
 import matplotlib.pyplot as plt
 
@@ -35,11 +41,11 @@ selected_models = st.multiselect("차량을 선택하세요 (복수 선택 가�
 
 # 그래프 그리기
 if selected_models:
-    plot_df = df[df[model_col].isin(selected_models)]
+    plot_df = df[df[model_col].isin(selected_models)].copy()
     try:
         plot_df[sales_col] = plot_df[sales_col].astype(int)
     except:
-        plot_df[sales_col] = pd.to_numeric(plot_df[sales_col].str.replace(",", ""), errors="coerce").fillna(0).astype(int)
+        plot_df[sales_col] = pd.to_numeric(plot_df[sales_col].astype(str).str.replace(",", ""), errors="coerce").fillna(0).astype(int)
     plt.figure(figsize=(8, 4))
     plt.bar(plot_df[model_col], plot_df[sales_col])
     plt.xlabel("모델")
