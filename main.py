@@ -45,14 +45,16 @@ selected_models = st.multiselect(
 )
 
 # 선택된 모델 데이터
-plot_df = df[df[model_col].isin(selected_models)]
+plot_df = df[df[model_col].isin(selected_models)].copy()
+plot_df[value_col] = pd.to_numeric(plot_df[value_col].astype(str).str.replace(',', '').str.replace(' ', ''), errors='coerce')
 
 if not plot_df.empty:
     plt.figure(figsize=(10, 6))
-    plt.bar(plot_df[model_col], plot_df[value_col].astype(int))
+    plt.plot(plot_df[model_col], plot_df[value_col], marker='o')
     plt.xlabel(model_col)
     plt.ylabel(value_col)
-    plt.title("차량별 판매 현황")
+    plt.title("차량별 판매 현황 (꺾은선 그래프)")
+    plt.xticks(rotation=45)
     st.pyplot(plt)
 else:
     st.info("차량(모델)을 선택하세요!")
