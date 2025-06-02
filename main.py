@@ -50,7 +50,9 @@ plot_df[value_col] = pd.to_numeric(plot_df[value_col].astype(str).str.replace(',
 
 if not plot_df.empty:
     plt.figure(figsize=(10, 6))
-    plt.plot(plot_df[model_col], plot_df[value_col], marker='o')
+#    plt.plot(plot_df[model_col], plot_df[value_col], marker='o')
+    plt.bar(plot_df[model_col], plot_df[value_col])
+
     plt.xlabel(model_col)
     plt.ylabel(value_col)
     plt.title("차량별 판매 현황 (꺾은선 그래프)")
